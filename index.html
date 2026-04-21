@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Pullman Trail"/>
+<meta name="theme-color" content="#1D4E2B"/>
+<title>Pullman Cultural Trail</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --brand:#1D4E2B;--brand-light:#EAF3DE;
+  --accent:#BA7517;--accent-light:#FAEEDA;
+  --blue:#185FA5;--blue-light:#E6F1FB;
+  --text:#1a1a1a;--muted:#666;
+  --bg:#fff;--bg2:#f5f5f2;
+  --border:rgba(0,0,0,0.12);
+  --nav-h:64px;--header-h:56px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;overflow:hidden;background:#1D4E2B;font-family:'DM Sans',sans-serif;color:var(--text)}
+#shell{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;background:var(--bg);position:relative;box-shadow:0 0 40px rgba(0,0,0,0.2)}
+.top-bar{height:var(--header-h);background:var(--brand);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0;z-index:10}
+.top-logo{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.top-logo svg{width:18px;height:18px;fill:#fff}
+.top-text h1{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#fff;letter-spacing:-0.2px;line-height:1.2}
+.top-text p{font-size:11px;color:rgba(255,255,255,0.65)}
+.filter-bar{display:flex;gap:8px;padding:9px 14px;background:var(--bg);border-bottom:0.5px solid var(--border);overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.chip{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:6px 14px;border-radius:20px;border:0.5px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;white-space:nowrap;-webkit-appearance:none}
+.chip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.content{flex:1;overflow:hidden;position:relative}
+.view{position:absolute;inset:0;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.view.active{display:block}
+#map-view{overflow:hidden;display:none;flex-direction:column}
+#map-view.active{display:flex}
+#map{flex:1;min-height:0}
+.legend-row{display:flex;gap:14px;flex-wrap:wrap;padding:9px 14px;background:var(--bg);border-top:0.5px solid var(--border);flex-shrink:0}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:480px;background:var(--bg);border-radius:16px 16px 0 0;box-shadow:0 -4px 32px rgba(0,0,0,0.25);transition:transform .3s cubic-bezier(.32,.72,0,1);z-index:9999;max-height:70%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + var(--safe-bottom));}
+.sheet.open{transform:translateX(-50%) translateY(0)}
+.sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 0}
+.sheet-close{position:absolute;top:12px;right:14px;width:30px;height:30px;border-radius:50%;background:var(--bg2);border:none;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.sheet-body{padding:12px 16px 32px}
+.sheet-body h3{font-family:'Playfair Display',serif;font-size:18px;color:var(--brand);margin:6px 0 6px}
+.sheet-body .desc{font-size:14px;color:var(--muted);line-height:1.65;margin-bottom:10px}
+.stop-cat{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;display:inline-block}
+.cat-Landmark{background:var(--brand-light);color:var(--brand)}
+.cat-Museum{background:var(--accent-light);color:var(--accent)}
+.cat-Transit{background:var(--blue-light);color:var(--blue)}
+.stop-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.stop-link{font-size:13px;color:var(--brand);text-decoration:none;border:0.5px solid var(--brand);padding:6px 14px;border-radius:20px}
+.stop-link:active{background:var(--brand-light)}
+.transit-dir{background:var(--blue);color:#fff;border-color:var(--blue)}
+.transit-dir:active{background:#0f4a8a}
+#list-view{padding-bottom:calc(var(--nav-h) + var(--safe-bottom))}
+.list-header{padding:11px 14px;background:var(--bg);border-bottom:0.5px solid var(--border);font-size:13px;color:var(--muted);position:sticky;top:0;z-index:5}
+.stop-card{display:flex;gap:12px;align-items:flex-start;padding:14px;border-bottom:0.5px solid var(--border);cursor:pointer;background:var(--bg)}
+.stop-card:active{background:var(--bg2)}
+.stop-dot{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0}
+.dot-Landmark{background:var(--brand-light);color:var(--brand)}
+.dot-Museum{background:var(--accent-light);color:var(--accent)}
+.dot-Transit{background:var(--blue-light);color:var(--blue)}
+.stop-info{flex:1;min-width:0}
+.stop-name{font-size:15px;font-weight:500;margin-bottom:3px}
+.stop-addr{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.stop-preview{font-size:12px;color:var(--muted);line-height:1.5;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-links{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.card-link{font-size:12px;color:var(--brand);text-decoration:none;border:0.5px solid var(--brand);padding:4px 12px;border-radius:20px}
+.chevron{color:#ccc;font-size:20px;align-self:center;flex-shrink:0;margin-left:4px}
+#dir-view{padding-bottom:calc(var(--nav-h) + var(--safe-bottom))}
+.dir-inner{padding:16px}
+.dir-inner h3{font-size:16px;font-weight:500;margin-bottom:14px;color:var(--text)}
+.field-group{margin-bottom:12px}
+.field-group label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;font-weight:500}
+.field-group select{font-family:'DM Sans',sans-serif;font-size:15px;padding:12px;border:0.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);width:100%;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.go-btn{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;padding:14px;background:var(--brand);color:#fff;border:none;border-radius:10px;cursor:pointer;width:100%;margin-top:4px}
+.go-btn:active{background:#27500A}
+.dir-result{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.stat-row{display:flex;gap:10px}
+.stat-card{flex:1;background:var(--bg2);border-radius:10px;padding:10px 8px;text-align:center}
+.stat-card strong{display:block;font-size:16px;font-weight:500;color:var(--text)}
+.stat-card span{font-size:11px;color:var(--muted)}
+.route-section h4{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 8px}
+.route-stop{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--bg);border:0.5px solid var(--border);border-radius:10px;font-size:14px;position:relative}
+.route-stop+.route-stop{margin-top:4px}
+.route-stop+.route-stop::before{content:'';position:absolute;left:21px;top:-4px;width:1px;height:4px;background:var(--border)}
+.route-num{width:24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.route-name{font-weight:500;margin-bottom:2px}
+.route-meta{font-size:11px;color:var(--muted)}
+.maps-btn{display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:500;color:#fff;text-decoration:none;background:var(--brand);padding:14px;border-radius:10px;width:100%;margin-top:4px}
+.maps-btn:active{background:#27500A}
+.bottom-nav{height:calc(var(--nav-h) + var(--safe-bottom));padding-bottom:var(--safe-bottom);background:var(--bg);border-top:0.5px solid var(--border);display:flex;flex-shrink:0;z-index:30}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:10px;font-weight:500;padding:0}
+.nav-btn.active{color:var(--brand)}
+.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+<div id="shell">
+  <div class="top-bar">
+    <div class="top-logo"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>
+    <div class="top-text"><h1>Pullman Cultural Trail</h1><p>Historic Pullman · Chicago, IL</p></div>
+  </div>
+  <div class="filter-bar">
+    <button class="chip active" data-cat="All">All stops</button>
+    <button class="chip" data-cat="Landmark">Landmarks</button>
+    <button class="chip" data-cat="Museum">Museums</button>
+    <button class="chip" data-cat="Transit">Transit</button>
+  </div>
+  <div class="content">
+    <div class="view active" id="map-view">
+      <div id="map"></div>
+      <div class="legend-row">
+        <div class="legend-item"><div class="legend-dot" style="background:#1D4E2B"></div>Landmark</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#BA7517"></div>Museum</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#185FA5"></div>Transit</div>
+      </div>
+    </div>
+    <div class="view" id="list-view">
+      <div class="list-header">Showing <strong id="count-shown">19</strong> of <strong id="count-all">19</strong> stops</div>
+      <div id="stop-cards"></div>
+    </div>
+    <div class="view" id="dir-view">
+      <div class="dir-inner">
+        <h3>Plan your route</h3>
+        <div class="field-group"><label>Start at</label><select id="start-stop"></select></div>
+        <div class="field-group"><label>End at (optional)</label><select id="end-stop"></select></div>
+        <button class="go-btn" id="go-btn">Plan walking route →</button>
+        <div class="dir-result" id="dir-result"></div>
+      </div>
+    </div>
+  </div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" id="sheet-close">✕</button>
+    <div class="sheet-body">
+      <span class="stop-cat" id="sh-cat"></span>
+      <h3 id="sh-name"></h3>
+      <p class="desc" id="sh-desc"></p>
+      <div class="stop-links" id="sh-links"></div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-view="map">
+      <svg viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+      Map
+    </button>
+    <button class="nav-btn" data-view="list">
+      <svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+      Stops
+    </button>
+    <button class="nav-btn" data-view="directions">
+      <svg viewBox="0 0 24 24"><path d="M9 17H5a2 2 0 01-2-2V5a2 2 0 012-2h11l4 4-4 4H9v6z"/><path d="M9 17v2a2 2 0 002 2h6a2 2 0 002-2v-5"/></svg>
+      Directions
+    </button>
+  </nav>
+</div>
+<script>
+const stops=[
+  {name:"103rd St / Rosemoor Metra",cat:"Transit",addr:"103rd St, Chicago, IL 60628",lat:41.70742904,lng:-87.60721489,link:"https://www.metra.com/schedules",metraUrl:"https://www.metra.com/schedules",desc:"Metra Electric Line station serving the northern edge of the Pullman district. A convenient gateway to the trail from downtown Chicago."},
+  {name:"107th St Metra",cat:"Transit",addr:"107th St, Chicago, IL 60628",lat:41.70009113,lng:-87.60881261,link:"https://www.metra.com/schedules",metraUrl:"https://www.metra.com/schedules",desc:"Mid-corridor Metra Electric stop providing easy access to the A. Philip Randolph Museum and Pullman Wheel Works."},
+  {name:"111th St / Pullman Metra",cat:"Transit",addr:"111th St, Chicago, IL 60628",lat:41.69282699,lng:-87.61049765,link:"https://www.metra.com/schedules",metraUrl:"https://www.metra.com/schedules",desc:"The primary transit hub for visitors to Historic Pullman, steps from the Visitor Center, Hotel Florence, and the Pullman National Historical Park core."},
+  {name:"115th St / Kensington Metra",cat:"Transit",addr:"115th St, Chicago, IL 60628",lat:41.68573427,lng:-87.61231565,link:"https://www.metra.com/schedules",metraUrl:"https://www.metra.com/schedules",desc:"Southern terminus station for the trail, serving the Kensington neighborhood at the edge of the Pullman district."},
+  {name:"Greenstone Church",cat:"Landmark",addr:"11211 S St Lawrence Ave, Chicago, IL 60628",lat:41.69061887,lng:-87.60822459,link:"http://friendsofpullman.com/",desc:"Built in 1882, this English Gothic-style church was constructed by George Pullman as part of his model company town. Its distinctive green serpentine stone exterior is one of Pullman's most recognizable structures."},
+  {name:"Firehouse",cat:"Landmark",addr:"623 E 108th St, Chicago, IL 60628",lat:41.69812269,lng:-87.60773207,link:"",desc:"The historic Pullman firehouse served the planned community's public safety needs in the late 19th century. Its Romanesque Revival design reflects the architectural cohesion Pullman demanded across his town."},
+  {name:"Hotel Florence",cat:"Landmark",addr:"11111 S Forrestville Ave, Chicago, IL 60628",lat:41.69235239,lng:-87.60907802,link:"https://dnrhistoric.illinois.gov/experience/sites/site.pullman-factory.html",desc:"Named for George Pullman's favorite daughter, this Queen Anne-style hotel (1881) was the social centerpiece of the model town. Now a State of Illinois historic site, it hosted dignitaries and served as a symbol of Pullman's ambitions."},
+  {name:"Market Square",cat:"Landmark",addr:"626 E 112th St, Chicago, IL 60628",lat:41.69132767,lng:-87.60720345,link:"http://friendsofpullman.com/",directions:true,desc:"One of the earliest planned commercial squares in the United States, designed to serve Pullman workers' daily needs. The arcade-style block remains a striking example of 19th-century urban planning."},
+  {name:"Pullman Car Works",cat:"Landmark",addr:"610 E 111th St, Chicago, IL 60628",lat:41.69289337,lng:-87.60869334,link:"https://www.nps.gov/pull/index.htm",desc:"The industrial heart of the Pullman company, where thousands of workers once built and maintained the iconic sleeping cars that defined American rail travel. Now part of Pullman National Historical Park."},
+  {name:"Visitor Center",cat:"Museum",addr:"11000 S Cottage Grove Ave, Chicago, IL 60628",lat:41.694361788691246,lng:-87.60875639931434,link:"https://www.nps.gov/pull/index.htm",desc:"The official National Park Service visitor center for Pullman National Historical Park. Start your journey here for exhibits, ranger programs, and orientation to the park's history of labor, industry, and community."},
+  {name:"A. Philip Randolph Museum",cat:"Museum",addr:"10406 S Maryland Ave, Chicago, IL 60628",lat:41.70538906,lng:-87.60289581,link:"http://thepullmanportersmuseum.org/",desc:"Dedicated to the life and legacy of A. Philip Randolph, founder of the Brotherhood of Sleeping Car Porters — the first predominantly Black labor union. The museum honors the porters' pivotal role in the civil rights movement."},
+  {name:"Pullman Wheel Works",cat:"Landmark",addr:"901 E 104th St, Chicago, IL 60628",lat:41.70556659,lng:-87.60107403,link:"https://www.mercyhousing.org/lakefront/pullman-wheelworks-apartments/",desc:"A former industrial complex where train wheels were manufactured. Adaptively reused as affordable housing by Mercy Housing Lakefront, preserving the building's historic character."},
+  {name:"Pullman Exhibit Hall",cat:"Museum",addr:"11141 S Cottage Grove Ave, Chicago, IL 60628",lat:41.6913275618584,lng:-87.60968525320824,link:"http://friendsofpullman.com/",desc:"A museum and community gathering space operated by the Historic Pullman Foundation, hosting exhibits, events, and educational programs about the neighborhood's rich history of labor, industry, and planned community design."},
+  {name:"Pullman Artspace",cat:"Landmark",addr:"11137 S Langley Ave, Chicago, IL 60628",lat:41.69167943,lng:-87.60582837,link:"https://pullmanarts.org/",desc:"A vibrant live-work space for artists, housed in a historic Pullman building. Pullman Artspace supports the creative community while preserving the neighborhood's architectural heritage."},
+  {name:"Honeymoon Row",cat:"Landmark",addr:"",lat:41.687381,lng:-87.607103,link:"",directions:true,desc:"A charming block of row houses reportedly nicknamed for the young couples who first settled there. The streetscape offers a glimpse into everyday life in Pullman's planned residential community."},
+  {name:"Horse Stables",cat:"Landmark",addr:"11201 S Cottage Grove Ave, Chicago, IL 60628",lat:41.69085028,lng:-87.61013935,link:"http://www.shareyoursoles.org/",desc:"Originally built to house the horses used in Pullman's operations, this structure is now home to Share Your Soles, a nonprofit collecting and distributing shoes to those in need."},
+  {name:"Florence Lowden Miller Center",cat:"Landmark",addr:"614 E 113th St, Chicago, IL 60628",lat:41.68928636,lng:-87.60764729,link:"http://friendsofpullman.com/",desc:"A community center named in honor of Florence Lowden Miller, operated by the Historic Pullman Foundation as a hub for neighborhood programming and preservation efforts."},
+  {name:"Schlitz Row",cat:"Landmark",addr:"11400 S Front Ave, Chicago, IL 60628",lat:41.68913413,lng:-87.61165258,link:"http://pullmantechworkshop.org/",desc:"Located at 11400 S. Front Ave. and the adjacent stable at 11314 S. Front Ave. (both 1906), these Queen Anne-style buildings combine projecting arches, recessed wall planes, and stucco accents for a sculptural effect. Their sturdy brick masonry and minimal ornament reflect the utilitarian character of the stable and deference to the grander tied house nearby."},
+  {name:"Pullman House Project",cat:"Museum",addr:"605 E 111th St, Chicago, IL 60628",lat:41.69267887,lng:-87.60819321,link:"https://www.pullmanathome.org/menu",desc:"An immersive house museum preserving an authentically restored Pullman worker's home. Visitors experience domestic life as it was lived in the 1890s model town."}
+];
+
+const catColors={Landmark:{fill:"#1D4E2B"},Museum:{fill:"#BA7517"},Transit:{fill:"#185FA5"}};
+let activeFilter="All",map,markers=[];
+
+function getVisible(){return activeFilter==="All"?stops:stops.filter(s=>s.cat===activeFilter);}
+
+function haversine(a,b){
+  const R=3959,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lng-a.lng)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function bearing(a,b){
+  const dLon=(b.lng-a.lng)*Math.PI/180;
+  const y=Math.sin(dLon)*Math.cos(b.lat*Math.PI/180);
+  const x=Math.cos(a.lat*Math.PI/180)*Math.sin(b.lat*Math.PI/180)-Math.sin(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.cos(dLon);
+  const deg=(Math.atan2(y,x)*180/Math.PI+360)%360;
+  return ["north","northeast","east","southeast","south","southwest","west","northwest"][Math.round(deg/45)%8];
+}
+function mkIcon(cat){
+  const c=catColors[cat]||{fill:"#444"};
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 26 34"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21s13-11.25 13-21C26 5.82 20.18 0 13 0z" fill="${c.fill}"/><circle cx="13" cy="13" r="5.5" fill="white" opacity="0.9"/></svg>`;
+  return L.divIcon({html:svg,className:'',iconSize:[32,42],iconAnchor:[16,42],popupAnchor:[0,-42]});
+}
+
+function initMap(){
+  map=L.map('map',{zoomControl:false}).setView([41.695,-87.607],14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>',
+    subdomains:'abcd',maxZoom:19
+  }).addTo(map);
+  L.control.zoom({position:'topright'}).addTo(map);
+  map.on('click',()=>closeSheet());
+  renderMarkers();
+}
+
+function renderMarkers(){
+  markers.forEach(m=>m.remove());markers=[];
+  const visible=getVisible();
+  visible.forEach(s=>{
+    if(!s.lat||!s.lng)return;
+    const m=L.marker([s.lat,s.lng],{icon:mkIcon(s.cat)}).addTo(map).on('click',(e)=>{
+      L.DomEvent.stopPropagation(e);
+      L.DomEvent.preventDefault(e);
+      showSheet(s);
+    });
+    markers.push(m);
+  });
+  const ll=visible.filter(s=>s.lat).map(s=>[s.lat,s.lng]);
+  if(ll.length)map.fitBounds(ll,{padding:[44,44]});
+}
+
+function closeSheet(){
+  const s=document.getElementById('sheet');
+  if(s) s.classList.remove('open');
+}
+
+function showSheet(s){
+  document.getElementById('sh-name').textContent=s.name;
+  const ce=document.getElementById('sh-cat');ce.textContent=s.cat;ce.className='stop-cat cat-'+s.cat;
+  document.getElementById('sh-desc').textContent=s.desc||'Visit the link below to learn more.';
+  const le=document.getElementById('sh-links');le.innerHTML='';
+  if(s.cat==='Transit'){
+    // Google Maps directions TO this station
+    const gmDir=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=transit`;
+    le.innerHTML+=`<a class="stop-link transit-dir" href="${gmDir}" target="_blank">🚆 Get directions here</a>`;
+    // Metra schedule
+    if(s.metraUrl) le.innerHTML+=`<a class="stop-link" href="${s.metraUrl}" target="_blank">View Metra schedule</a>`;
+    // CTA Trip Planner
+    le.innerHTML+=`<a class="stop-link" href="https://www.transitchicago.com/planatrip/" target="_blank">CTA trip planner</a>`;
+  } else {
+    if(s.link) le.innerHTML+=`<a class="stop-link" href="${s.link}" target="_blank">Learn more ↗</a>`;
+    if(s.addr) le.innerHTML+=`<a class="stop-link" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.addr)}" target="_blank">Open in Maps ↗</a>`;
+    if(s.directions) le.innerHTML+=`<a class="stop-link" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=walking" target="_blank">📍 Get directions</a>`;
+  }
+  document.getElementById('sheet').classList.add('open');
+}
+
+function renderList(){
+  const visible=getVisible();
+  document.getElementById('count-shown').textContent=visible.length;
+  document.getElementById('count-all').textContent=stops.length;
+  const cards=document.getElementById('stop-cards');cards.innerHTML='';
+  visible.forEach(s=>{
+    const ini=s.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    let lnks='';
+    if(s.link)lnks+=`<a class="card-link" href="${s.link}" target="_blank">Website ↗</a>`;
+    if(s.addr)lnks+=`<a class="card-link" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.addr)}" target="_blank">Maps ↗</a>`;
+    const div=document.createElement('div');div.className='stop-card';
+    div.innerHTML=`<div class="stop-dot dot-${s.cat}">${ini}</div><div class="stop-info"><div class="stop-name">${s.name}</div><span class="stop-cat cat-${s.cat}">${s.cat}</span>${s.addr?`<div class="stop-addr">${s.addr}</div>`:''}<div class="stop-preview">${s.desc}</div>${lnks?`<div class="card-links">${lnks}</div>`:''}</div><div class="chevron">›</div>`;
+    cards.appendChild(div);
+  });
+}
+
+function populateDirectionSelects(){
+  const wc=stops.filter(s=>s.lat&&s.lng);
+  ['start-stop','end-stop'].forEach((id,i)=>{
+    const sel=document.getElementById(id);sel.innerHTML='';
+    if(i===1)sel.innerHTML='<option value="">— No specific end (full tour) —</option>';
+    wc.forEach((s,j)=>sel.innerHTML+=`<option value="${j}">${s.name}</option>`);
+  });
+}
+
+function planRoute(){
+  const wc=stops.filter(s=>s.lat&&s.lng);
+  const si=parseInt(document.getElementById('start-stop').value);
+  const ev=document.getElementById('end-stop').value;
+  const start=wc[si],endStop=ev!==''?wc[parseInt(ev)]:null;
+  let pool=wc.filter((s,i)=>{
+    if(i===si)return false;
+    if(ev!==''&&i===parseInt(ev))return false;
+    if(s.cat==='Transit')return false;
+    return true;
+  });
+  let route=[start],current=start;
+  while(pool.length>0){
+    let nearest=null,nearDist=Infinity;
+    pool.forEach(s=>{const d=haversine(current,s);if(d<nearDist){nearDist=d;nearest=s;}});
+    route.push(nearest);pool=pool.filter(s=>s!==nearest);current=nearest;
+  }
+  if(endStop)route.push(endStop);
+  let total=0;
+  for(let i=0;i<route.length-1;i++)total+=haversine(route[i],route[i+1]);
+  const mins=Math.round(total/0.05),hrs=Math.floor(mins/60),rm=mins%60;
+  const timeStr=hrs>0?`${hrs}h ${rm}m`:`${mins} min`;
+  let html=`<div class="stat-row"><div class="stat-card"><strong>${total.toFixed(1)} mi</strong><span>Distance</span></div><div class="stat-card"><strong>~${timeStr}</strong><span>Walking</span></div><div class="stat-card"><strong>${route.length}</strong><span>Stops</span></div></div><div class="route-section"><h4>Route from ${start.name}</h4>`;
+  route.forEach((s,i)=>{
+    const dist=i<route.length-1?haversine(s,route[i+1]):null;
+    const dir=i<route.length-1?bearing(s,route[i+1]):'';
+    html+=`<div class="route-stop"><div class="route-num">${i+1}</div><div style="flex:1;min-width:0"><div class="route-name">${s.name}</div><div class="route-meta">${s.cat}${dist?` · Head ${dir}, ${dist.toFixed(2)} mi`:' · Final stop'}</div></div></div>`;
+  });
+  const gmStops=route.length<=10?route:[route[0],...route.slice(1,-1).filter((_,i,a)=>i%Math.ceil(a.length/8)===0).slice(0,8),route[route.length-1]];
+  const mapsUrl=`https://www.google.com/maps/dir/${gmStops.map(s=>`${s.lat},${s.lng}`).join('/')}`;
+  html+=`</div><a href="${mapsUrl}" target="_blank" class="maps-btn">Open in Google Maps ↗</a>`;
+  document.getElementById('dir-result').innerHTML=html;
+  setTimeout(()=>document.getElementById('dir-result').scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+// Nav
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const v=btn.dataset.view;
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+    const viewId=v==='map'?'map-view':v==='list'?'list-view':'dir-view';
+    document.getElementById(viewId).classList.add('active');
+    if(v==='map'&&map)setTimeout(()=>map.invalidateSize(),150);
+    if(v==='list')renderList();
+    if(v==='directions')populateDirectionSelects();
+    closeSheet();
+  });
+});
+
+// Filter chips
+document.querySelectorAll('.chip').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter=btn.dataset.cat;
+    renderMarkers();renderList();closeSheet();
+  });
+});
+
+document.getElementById('sheet-close').addEventListener('click', function(e){
+  e.stopPropagation();
+  closeSheet();
+}, true);
+document.getElementById('go-btn').addEventListener('click',planRoute);
+
+// Close sheet when tapping outside it
+document.addEventListener('click', function(e){
+  const sheet = document.getElementById('sheet');
+  if(sheet && sheet.classList.contains('open') && !sheet.contains(e.target)){
+    closeSheet();
+  }
+}, true);
+
+function startApp(){
+  if(typeof L === 'undefined'){setTimeout(startApp, 50); return;}
+  initMap(); renderList(); populateDirectionSelects();
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', startApp);
+} else {
+  startApp();
+}
+window.addEventListener('resize',()=>{if(map)setTimeout(()=>map.invalidateSize(),100);});
+</script>
+</body>
+</html>
