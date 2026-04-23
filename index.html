@@ -431,8 +431,8 @@ const stops=[
   {id:"miller-center",name:"Florence Lowden Miller Center",cat:"Landmark",addr:"614 E 113th St, Chicago, IL 60628",lat:41.68928636,lng:-87.60764729,link:"http://friendsofpullman.com/",desc:"A community center named in honor of Florence Lowden Miller, operated by the Historic Pullman Foundation as a hub for neighborhood programming and preservation efforts."},
   {id:"schlitz-row",name:"Schlitz Row",cat:"Landmark",addr:"11400 S Front Ave, Chicago, IL 60628",lat:41.68913413,lng:-87.61165258,link:"http://pullmantechworkshop.org/",desc:"Located at 11400 S. Front Ave. and the adjacent stable at 11314 S. Front Ave. (both 1906), these Queen Anne-style buildings combine projecting arches, recessed wall planes, and stucco accents for a sculptural effect. Their sturdy brick masonry and minimal ornament reflect the utilitarian character of the stable and deference to the grander tied house nearby."},
   {id:"house-project",name:"Pullman House Project",cat:"Museum",hours:"Daily tours at 10am · Advance tickets required · pullmanathome.org/tours",addr:"605 E 111th St, Chicago, IL 60628",lat:41.69267887,lng:-87.60819321,link:"https://www.pullmanathome.org/menu",desc:"An immersive house museum preserving an authentically restored Pullman worker's home. Visitors experience domestic life as it was lived in the 1890s model town. Also home to Pullman Club Coffee, serving coffee and pastries — a perfect stop before or after your tour."},
-  {id:"divvy-cottage-111th-pl",name:"Divvy Station — Cottage Grove & 111th Pl",cat:"Transit",addr:"Cottage Grove Ave & 111th Pl, Chicago, IL 60628",lat:41.6917099,lng:-87.61000,link:"https://divvybikes.com",desc:"Confirmed Divvy docking station at Cottage Grove & 111th Place. Unlock and return classic bikes and e-bikes using the Divvy or Lyft app. Visit divvybikes.com for real-time availability and pricing."},
-  {id:"divvy-mlk-111th",name:"Divvy Station — MLK Dr & 111th St",cat:"Transit",addr:"Martin Luther King Dr & 111th St, Chicago, IL 60628",lat:41.6926391,lng:-87.6136739,link:"https://divvybikes.com",desc:"Divvy docking station at Martin Luther King Dr and 111th St, on the western edge of the trail corridor. Unlock and return classic bikes and e-bikes using the Divvy or Lyft app. Visit divvybikes.com for real-time availability."}
+  {id:"divvy-cottage-111th-pl",name:"Divvy Station — Cottage Grove & 111th Pl",cat:"Transit",addr:"Cottage Grove Ave & 111th Pl, Chicago, IL 60628",lat:41.6917099,lng:-87.61000,link:"https://divvybikes.com",desc:"Confirmed Divvy docking station at Cottage Grove & 111th Place. Unlock classic bikes and e-bikes using the Divvy or Lyft app. Check availability at divvybikes.com or download the Divvy app (iOS & Android).",link2:"https://account.divvybikes.com/map"},
+  {id:"divvy-mlk-111th",name:"Divvy Station — MLK Dr & 111th St",cat:"Transit",addr:"Martin Luther King Dr & 111th St, Chicago, IL 60628",lat:41.6926391,lng:-87.6136739,link:"https://divvybikes.com",desc:"Divvy docking station at Martin Luther King Dr and 111th St. Unlock classic bikes and e-bikes using the Divvy or Lyft app. Check availability at divvybikes.com or download the Divvy app (iOS & Android).",link2:"https://account.divvybikes.com/map"}
 ];
 
 const catColors={Landmark:{fill:"#1D4E2B"},Museum:{fill:"#BA7517"},Transit:{fill:"#185FA5"}};
@@ -504,13 +504,12 @@ function showSheet(s){
   else{hoursEl.style.display='none';}
   const le=document.getElementById('sh-links');le.innerHTML='';
   if(s.cat==='Transit'){
-    // Google Maps directions TO this station
     const gmDir=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=transit`;
     le.innerHTML+=`<a class="stop-link transit-dir" href="${gmDir}" target="_blank">🚆 Get directions here</a>`;
-    // Metra schedule
     if(s.metraUrl) le.innerHTML+=`<a class="stop-link" href="${s.metraUrl}" target="_blank">View Metra schedule</a>`;
-    // CTA Trip Planner
-    le.innerHTML+=`<a class="stop-link" href="https://www.transitchicago.com/planatrip/" target="_blank">CTA trip planner</a>`;
+    if(s.link&&s.link.includes('divvy')) le.innerHTML+=`<a class="stop-link" href="${s.link}" target="_blank">divvybikes.com ↗</a>`;
+    if(s.link2) le.innerHTML+=`<a class="stop-link" href="${s.link2}" target="_blank">🚲 Live bike map ↗</a>`;
+    if(!s.link||!s.link.includes('divvy')) le.innerHTML+=`<a class="stop-link" href="https://www.transitchicago.com/planatrip/" target="_blank">CTA trip planner</a>`;
   } else {
     if(s.link) le.innerHTML+=`<a class="stop-link" href="${s.link}" target="_blank">Learn more ↗</a>`;
     if(s.addr) le.innerHTML+=`<a class="stop-link" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.addr)}" target="_blank">Open in Maps ↗</a>`;
