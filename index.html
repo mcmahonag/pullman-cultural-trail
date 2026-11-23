@@ -60,6 +60,8 @@ html,body{height:100%;overflow:hidden;background:#1D4E2B;font-family:'DM Sans',s
 .top-bar{height:calc(var(--header-h) + var(--safe-top) + var(--edge-gap));background:var(--brand);display:flex;align-items:center;padding:calc(var(--safe-top) + var(--edge-gap)) 14px 0;gap:10px;flex-shrink:0;z-index:10}
 @media (display-mode: standalone){:root{--edge-gap:20px}}
 html.standalone{--edge-gap:20px}
+/* Home-screen app: green behind the status bar, white behind the bottom nav, so any gap iOS leaves under the nav blends in */
+html.standalone,html.standalone body{background:linear-gradient(to bottom,var(--brand) 0,var(--brand) 50%,var(--bg) 50%,var(--bg) 100%)}
 /* iOS 26: solid brand strip behind the clock/battery so the system edge blur has a flat color to sample */
 #status-fill{position:fixed;top:0;left:0;right:0;height:var(--safe-top);background:var(--brand);z-index:25000;pointer-events:none}
 .top-logo{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
