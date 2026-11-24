@@ -29,6 +29,11 @@ window.addEventListener('online',()=>{
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
 <script>/* iOS home-screen detection that works with or without a manifest */
 if(navigator.standalone||matchMedia('(display-mode: standalone)').matches)document.documentElement.classList.add('standalone');</script>
+<script>/* iOS 27 home-screen bug: CSS 100% can come out one status bar shorter than the real window.
+   Size the page from innerHeight instead, and let bottom-anchored overlays reach the real bottom. */
+(function(){var d=document.documentElement,probe;function f(){if(!(navigator.standalone||matchMedia('(display-mode: standalone)').matches))return;if(!probe&&document.body){probe=document.createElement('div');probe.style.cssText='position:fixed;top:0;left:0;width:0;height:100%;visibility:hidden;pointer-events:none';document.body.appendChild(probe)}var h=innerHeight;d.style.height=h+'px';var icb=probe?probe.getBoundingClientRect().height:h;var gap=Math.max(0,Math.round(h-icb));d.style.setProperty('--vp-gap',gap+'px');d.setAttribute('data-hfix',h+'/'+gap)}f();document.addEventListener('DOMContentLoaded',f);addEventListener('load',function(){f();setTimeout(f,500)});addEventListener('resize',f);addEventListener('pageshow',f);if(window.visualViewport)visualViewport.addEventListener('resize',f)})();</script>
+<style>/* overlays anchored to the bottom follow the real window bottom */
+html.standalone #welcome-screen,html.standalone #about-modal,html.standalone #route-sheet-backdrop,html.standalone #demo-sheet-backdrop,html.standalone .sheet,html.standalone #route-info-sheet,html.standalone #demo-sheet{bottom:calc(0px - var(--vp-gap,0px))!important}</style>
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-0T6ZG0FELX"></script>
 <script>
@@ -60,8 +65,6 @@ html,body{height:100%;overflow:hidden;background:#1D4E2B;font-family:'DM Sans',s
 .top-bar{min-height:calc(var(--header-h) + var(--safe-top) + var(--edge-gap));background:var(--brand);display:flex;align-items:center;padding:calc(8px + var(--safe-top) + var(--edge-gap)) 14px 8px;gap:10px;flex-shrink:0;z-index:10;position:sticky;top:0}
 @media (display-mode: standalone){:root{--edge-gap:0px}}
 html.standalone{--edge-gap:0px}
-/* Home-screen app: green behind the status bar, white behind the bottom nav, so any gap iOS leaves under the nav blends in */
-html.standalone,html.standalone body{background:linear-gradient(to bottom,var(--brand) 0,var(--brand) 50%,var(--bg) 50%,var(--bg) 100%)}
 /* iOS 26: solid brand strip behind the clock/battery so the system edge blur has a flat color to sample */
 #status-fill{position:fixed;top:0;left:0;right:0;height:var(--safe-top);background:var(--brand);z-index:25000;pointer-events:none}
 .top-logo{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
